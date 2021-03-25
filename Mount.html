@@ -1,0 +1,580 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Mount</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var config = {
+    type: Phaser.AUTO,
+    width: 3658,
+    height: 2058,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: true
+        }
+    },
+    input: {gamepad:true},
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+var player;
+var playerHp = 3;
+var ennemi;
+var stars;
+var platforms;
+var ice_platforms;
+var snow_platforms;
+var cursors;
+var attack = false;
+var score = 0;
+var gameOver = false;
+    
+var invulnerable = false;
+var sol = 0; // sol sur lequel le joueur se trouve
+var jumps = 1;
+var jumping = true; //Sert a savoir si le joueur a le droit de sauter
+var playerInput = 5;    //input du joueur
+var scoreText;
+var inputText;
+var testText;
+
+var xAxis = 0;  //stick xAxys
+var yAxis = 0;  //stick xAxys
+    
+var game = new Phaser.Game(config);
+
+function preload ()
+{
+
+    this.load.image('sky', 'assets/sky.png');
+    this.load.image('ground', 'assets/platform.png');
+    this.load.image('ice', 'assets/ice_platform.png');
+    this.load.image('snow', 'assets/snow_platform.png');
+    this.load.image('star', 'assets/star.png');
+    this.load.image('hp1', 'assets/hp_1.png')
+    this.load.image('hp2', 'assets/hp_2.png')
+    this.load.image('hp3', 'assets/hp_3.png')
+    this.load.image('sword', 'assets/no_background.png');
+    this.load.atlas('ennemi', 'assets/ennemi.png', 'assets/ennemi.json');
+    this.load.atlas('character', 'assets/character.png', 'assets/character.json');
+    
+}
+
+function create ()
+{
+    //  A simple background for our game
+    //map = this.add.tilemap('map'); //new
+    //map.addTilesetImage('Calque de Tuiles 1', 'map');
+    //layer = map.createlayer()
+    this.add.image(1829, 1029,'sky');//new
+    
+    hp = this.add.image(200, 100, 'assets/hp_3.png').setScrollFactor(0); //hp du joueur en haut a gauche
+    //hpSprite = this.add.image(x,y,'hp_max');//new
+    //hpSprite.setTexture('newImage');
+    
+    
+    //  The platforms group contains the ground and the 2 ledges we can jump on
+    platforms = this.physics.add.staticGroup();
+    ice_platforms = this.physics.add.staticGroup();
+    snow_platforms = this.physics.add.staticGroup();
+
+    //  Here we create the ground.
+    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
+    platforms.create(960, 1050, 'ground').setScale(5).refreshBody();
+
+    //  Les plateformes
+    snow_platforms.create(900, 900, 'snow');
+    platforms.create(50, 750, 'ground');
+    ice_platforms.create(1450, 900, 'ice');
+
+    // Le personnage et ses caractéristiques
+    player = this.physics.add.sprite(100, 450, 'character');
+    player.setSize(128, 163);
+    player.setOffset(120, -90);
+    player.setOrigin(0.5, 1);
+    
+    player.on('animationcomplete', function(){ //  Autorise le personnage à bouger uniquement quand l'animation d'attaque se fini
+        attack = false;
+    });
+    
+    //  Player physics properties.
+    player.setCollideWorldBounds(true);
+    
+    ennemi = this.physics.add.sprite(900, 750, 'ennemi');
+    ennemi.setCollideWorldBounds(true);
+    
+    hitboxes = this.physics.add.sprite(0,0,'sword');
+    hitboxes.body.setAllowGravity(false);
+    
+
+    //  Animation du personage
+    
+    this.anims.create({
+        key: 'idle',
+        frames: this.anims.generateFrameNames('character', {
+            prefix: 'idle',
+            start: 1,
+            end: 6,
+            zeroPad: 1
+        }),
+        frameRate: 5,
+        repeat: -1
+    });
+    
+     this.anims.create({
+        key: 'run',
+        frames: this.anims.generateFrameNames('character', {
+            prefix: 'run',
+            start: 1,
+            end: 10,
+            zeroPad: 1
+        }),
+        frameRate: 10,
+        repeat: -1
+    });
+    
+    this.anims.create({
+        key: 'walk',
+        frames: this.anims.generateFrameNames('character', {
+            prefix: 'run',
+            start: 1,
+            end: 10,
+            zeroPad: 1
+        }),
+        frameRate: 5,
+        repeat: -1
+    });
+    
+    this.anims.create({
+        key: 'ascend',
+        frames: this.anims.generateFrameNames('character', {
+            prefix: 'jump',
+            start: 1,
+            end: 2,
+            zeroPad: 1
+        }),
+        frameRate: 1
+    });
+    
+    this.anims.create({
+        key: 'descend',
+        frames: this.anims.generateFrameNames('character', {
+            prefix: 'jump',
+            start: 3,
+            end: 4,
+            zeroPad: 1
+        }),
+        frameRate: 1
+    });
+    
+    this.anims.create({
+        key: 'attack',
+        frames: this.anims.generateFrameNames('character', {
+            prefix: 'attack',
+            start: 1,
+            end: 6,
+            zeroPad: 1
+        }),
+        frameRate: 10,
+        repeat: 0
+        
+    });
+
+    
+    this.anims.create({
+        key: 'ennemi_idle',
+        frames: this.anims.generateFrameNames('ennemi', {
+            prefix: 'ennemi',
+            start: 1,
+            end: 6,
+            zeroPad: 1
+        }),
+        frameRate: 6,
+        repeat: -1
+    });
+    ennemi.anims.play('ennemi_idle', true);
+    //  Input Events
+    cursors = this.input.keyboard.createCursorKeys();
+
+    //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
+    stars = this.physics.add.group({
+        key: 'star',
+        repeat: 11,
+        setXY: { x: 12, y: 0, stepX: 70 }
+    });
+
+    stars.children.iterate(function (child) {
+
+        //  Give each star a slightly different bounce
+        child.setBounceY(Phaser.Math.FloatBetween(0.2, 0.4));
+
+    });
+
+    //bombs = this.physics.add.group(); group ennemi plus tard
+
+    //  The score
+    testText = this.add.text(400, 80, 'Test: 0', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
+    inputText = this.add.text(400, 48, 'Input: 5', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
+    scoreText = this.add.text(400, 16, 'Score: 0', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
+
+    //  Collide the player and the stars with the platforms
+    this.physics.add.collider(player, platforms, touching_ground, null, this);
+    this.physics.add.collider(player, ice_platforms, touching_ice, null, this);
+    this.physics.add.collider(player, snow_platforms, touching_snow, null, this);
+    this.physics.add.collider(ennemi, platforms);
+    this.physics.add.collider(ennemi, snow_platforms);
+    this.physics.add.collider(ennemi, ice_platforms);
+    this.physics.add.collider(stars, platforms);
+
+    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+    this.physics.add.overlap(player, stars, collectStar, null, this);
+    this.physics.add.overlap(hitboxes, ennemi, attackEnnemi, null, this);
+    this.physics.add.overlap(player, ennemi, hitEnnemi, null, this);
+    
+    this.cameras.main.setBounds(0,0,3658, 2058);
+    this.cameras.main.setSize(1920,1080);
+    this.cameras.main.startFollow(player, true, 0.08, 0.08);
+}
+
+function update ()
+{
+    if (gameOver)
+    {
+        return;
+    }
+    //
+    
+    let pad = Phaser.Input.Gamepad.Gamepad;
+    
+    if(this.input.gamepad.total){
+        pad = this.input.gamepad.getPad(0)
+        xAxis = pad ? pad.axes[0].getValue() : 0;
+        yAxis = pad ? pad.axes[1].getValue() : 0;
+    }
+    
+    
+    //Player's input
+    
+    if (cursors.down.isDown || pad.X){
+        playerInput = 2;
+        attack = true;
+    }
+    
+    else if (cursors.up.isDown && cursors.right.isDown || pad.A && pad.right  || pad.A && xAxis > 0){
+        playerInput = 9;
+    }
+
+    else if(cursors.up.isDown && cursors.left.isDown || pad.A && pad.left || pad.A && xAxis < 0){
+        playerInput = 7;
+    }
+
+    else if(cursors.up.isDown || pad.A){
+        playerInput = 8;
+    }
+
+    else if (cursors.left.isDown || pad.left || xAxis < 0){
+        playerInput = 4;
+    }
+
+    else if (cursors.right.isDown || pad.right || xAxis > 0){
+        playerInput = 6;
+    }
+
+    else{
+        playerInput = 5;
+    }
+    
+    
+    //Character's movement
+    
+    if(attack){                     //Si l'animation d'attack est en cours
+        player.setVelocityX(0);     //Pendant l'attaque le joueur ne se déplace plus  horizontalement
+        
+    }
+    
+    else if (playerInput == 8)      //Si le joueur appuie sur haut
+    {
+        player.setVelocityX(0);     //Retire la vitesse horizontale avant de sauter
+        
+        if (jumping && jumps > 0){  //Si il a relaché la touche et si il lui reste des sauts
+            player.setVelocityY(-330);
+            jumps--;    //Retire un de la variable qui correspond au nombre de saut encore disponible
+            jumping = false;    //jumping deviens faux tant que la touche est enfoncé, le joueur ne peut plus sauté tant qu'il ne la relache pas
+        }
+    }
+    
+    else if (playerInput == 9)  //Si le joueur appuie sur la diagonale Haut Droite
+    {
+        if (sol == 2){                 //Si le joueur est sur de la neige
+            player.setVelocityX(250);   //Saute moins haut que sur le sol normal
+            player.flipX = true;        //
+        }
+        
+        else {                          //Sinon le joueur saute normalement
+            player.setVelocityX(500);
+            player.flipX = true;
+        }
+        
+        if (jumping && jumps > 0){      //Si le joueur peut sauter
+            player.setVelocityY(-330);
+            jumps--;
+            jumping = false;
+        }
+    }
+    
+    else if (playerInput == 7)
+    {
+        if (sol == 2){
+            player.setVelocityX(-250);
+            player.flipX = false;
+        }
+        
+        else {
+            player.setVelocityX(-500);
+            player.flipX = false;
+        }
+            
+        if (jumping && jumps > 0){
+            player.setVelocityY(-330);
+            jumps--;
+            jumping = false;
+        }
+    }
+    
+    else if (playerInput == 4){
+        if (sol == 2){
+            player.setVelocityX(-250);
+            player.flipX = false;
+        }
+        
+        else if (sol == 1 && player.body.touching.down){
+            player.setAccelerationX(-300);
+            player.flipX = false;
+        }
+        
+        else {
+            player.setVelocityX(-500);
+            player.flipX = false;
+        }
+        
+    }
+
+    else if (playerInput == 6){
+        
+        if (sol == 2){
+            player.setVelocityX(250);
+            player.flipX = true;
+        }
+        
+        else if (sol == 1 && player.body.touching.down){
+            player.setAccelerationX(300);
+            player.flipX = true;
+        }
+
+        else {
+            player.setVelocityX(500);
+            player.flipX = true;
+        }
+    }
+    
+    else {
+        if (sol == 1 && player.body.touching.down){
+            if(player.body.velocity.x < 0){
+                player.setAccelerationX(300);
+            }
+            
+            else if(player.body.velocity.x > 0) {
+                player.setAccelerationX(-300);
+            }
+            
+            else {
+                player.setVelocityX(0);
+                player.setAccelerationX(0);
+            }
+        }
+        
+        else {
+            player.setVelocityX(0);
+            player.setAccelerationX(0);
+        }
+    }
+    
+    if(playerInput !=8 && playerInput !=9 && playerInput !=7 ){
+        jumping = true;
+    }
+    
+    if (player.body.touching.down)
+    {
+        jumps = 1;
+    }
+    
+
+    //Character's Animation
+    
+    if (attack){
+        player.anims.play('attack', true);
+    }
+    
+    else if (player.body.velocity.y <= 0 && !player.body.touching.down){
+        player.anims.play('ascend', true);
+    }
+    
+    else if (player.body.velocity.y > 0){
+        player.anims.play('descend', true);
+    }
+    
+    else if (player.body.velocity.x > 0){
+        
+        if (sol == 2){
+            player.anims.play('walk', true);
+        }
+        
+        else {
+            player.anims.play('run', true);
+        }
+       
+    }
+    
+    else if (player.body.velocity.x < 0){
+        
+        if (sol == 2){
+            player.anims.play('walk', true);
+        }
+        
+        else {
+            player.anims.play('run', true);
+        }
+        
+    }
+    
+    else{
+        player.anims.play('idle', true);
+    }
+    
+    if(playerHp == 0)
+    {
+        this.physics.pause();
+
+        player.visible = false;
+        
+        gameOver = true;
+
+        perdu = this.time.addEvent({ delay: 10, callback: function(){alert('Perdu');}, callbackScope: this});
+    }
+    
+
+    if (attack){
+        hitboxes.y = player.y-player.height/2.5;
+        if (player.flipX){
+            hitboxes.x = player.x+hitboxes.width/2;
+        }
+
+        else{
+            hitboxes.x = player.x-hitboxes.width/2;
+        }
+    }
+    
+    if(playerHp == 3){
+       hp.setTexture('hp3');
+       }
+    
+    else if (playerHp == 2){
+        hp.setTexture('hp2');
+    }
+    
+    else{
+        hp.setTexture('hp1');
+    }
+    
+    testText.setText('Test: ' + playerHp);
+    inputText.setText('Input: ' + playerInput);
+}
+
+function collectStar (player, star)
+{
+    star.disableBody(true, true);
+
+    //  Add and update the score
+    score += 10;
+    scoreText.setText('Score: ' + score);
+
+    if (stars.countActive(true) === 0)
+    {
+        //  A new batch of stars to collect
+        stars.children.iterate(function (child) {
+
+            child.enableBody(true, child.x, 0, true, true);
+
+        });
+/*
+        var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+        var bomb = bombs.create(x, 16, 'bomb');
+        bomb.setBounce(1);
+        bomb.setCollideWorldBounds(true);
+        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+        bomb.allowGravity = false;
+*/
+    }
+}
+
+function hitEnnemi(player, ennemi)
+{
+    if(!invulnerable)   // Si le joueur n'est pas invulnerable
+    {
+        playerHp --;                    // Le joueur perd un pv
+        invulnerable = true;            // Il deviens invulnerable
+        
+        if (playerHp > 0){  // Si le joueur est encore en vie après s'être pris le coup
+            clignotement = this.time.addEvent({ delay: 200, repeat: 9, callback: function(){player.visible = !player.visible;}, callbackScope: this}); // Le joueur passe de visible a non visible toutes les 200ms 9 fois de suite
+        }
+
+        tempsInvulerable = this.time.addEvent({ delay: 2000, callback: function(){invulnerable = false;}, callbackScope: this});  // Le joueur n'est plus invulnerable après 2000ms
+    }
+    
+}
+
+
+
+function attackEnnemi(hitboxes, ennemi)
+{
+    if(attack){
+        ennemi.destroy();
+    }
+}
+    
+function touching_ground(player, platforms)
+{
+    sol = 0;
+}    
+
+function touching_ice(player, ice_platforms)
+{
+    sol = 1;
+}
+    
+function touching_snow(player, snow_platforms)
+{
+    sol = 2;
+}
+
+</script>
+
+</body>
+</html>
