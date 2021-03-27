@@ -16,12 +16,12 @@
 
 var config = {
     type: Phaser.AUTO,
-    width: 3658,
-    height: 2058,
+    width: 4000,
+    height: 2300,
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 300 },
+            gravity: { y: 600 },
             debug: true
         }
     },
@@ -42,7 +42,6 @@ var ice_platforms;
 var snow_platforms;
 var cursors;
 var attack = false;
-var score = 0;
 var gameOver = false;
     
 var invulnerable = false;
@@ -50,26 +49,43 @@ var sol = 0; // sol sur lequel le joueur se trouve
 var jumps = 1;
 var jumping = true; //Sert a savoir si le joueur a le droit de sauter
 var playerInput = 5;    //input du joueur
-var scoreText;
+
 var inputText;
 var testText;
 
 var xAxis = 0;  //stick xAxys
 var yAxis = 0;  //stick xAxys
-    
+
 var game = new Phaser.Game(config);
 
+//space = this.input.keyboard.addKey('space');
+//if (Phaser.Input.Keyboard.JustDown(space)){taFunction}
+    
 function preload ()
 {
 
     this.load.image('sky', 'assets/sky.png');
+    this.load.image('left_rock', 'assets/left_rock.png');
+    this.load.image('right_rock', 'assets/right_rock.png');
+    this.load.image('bottom_ice', 'assets/bottom_ice.png');
+    this.load.image('left_rock', 'assets/left_rock.png');
+    this.load.image('bottom_left_rock', 'assets/bottom_left_rock.png');
+    this.load.image('bottom_right_snow', 'assets/bottom_right_snow.png');
+    this.load.image('bottom_right_snow2', 'assets/bottom_right_snow2.png');
+    this.load.image('right_snow', 'assets/right_snow.png');
+    this.load.image('middle_fondrock', 'assets/middle_fondrock.png');
+    this.load.image('middle_rock_1', 'assets/middle_rock_1.png');
+    this.load.image('middle_rock_2', 'assets/middle_rock_2.png');
+    this.load.image('middle_rock_3', 'assets/middle_rock_3.png');
+    this.load.image('mountainF', 'assets/mountain_far.png');
+    this.load.image('mountainC', 'assets/mountain_close.png');
     this.load.image('ground', 'assets/platform.png');
     this.load.image('ice', 'assets/ice_platform.png');
     this.load.image('snow', 'assets/snow_platform.png');
     this.load.image('star', 'assets/star.png');
-    this.load.image('hp1', 'assets/hp_1.png')
-    this.load.image('hp2', 'assets/hp_2.png')
-    this.load.image('hp3', 'assets/hp_3.png')
+    this.load.image('hp1', 'assets/hp_1.png');
+    this.load.image('hp2', 'assets/hp_2.png');
+    this.load.image('hp3', 'assets/hp_3.png');
     this.load.image('sword', 'assets/no_background.png');
     this.load.atlas('ennemi', 'assets/ennemi.png', 'assets/ennemi.json');
     this.load.atlas('character', 'assets/character.png', 'assets/character.json');
@@ -82,9 +98,11 @@ function create ()
     //map = this.add.tilemap('map'); //new
     //map.addTilesetImage('Calque de Tuiles 1', 'map');
     //layer = map.createlayer()
-    this.add.image(1829, 1029,'sky');//new
-    
-    hp = this.add.image(200, 100, 'assets/hp_3.png').setScrollFactor(0); //hp du joueur en haut a gauche
+    this.add.image(1445, 810,'sky').setScrollFactor(0.2);//new
+    this.add.image(1445, 810,'mountainF').setScrollFactor(0.2);
+    this.add.image(1445, 810,'mountainC').setScrollFactor(0.3);
+    this.add.image(1500, 2300-813, 'middle_fondrock');
+    hp = this.add.image(200, 100, 'hp3').setScrollFactor(0); //hp du joueur en haut a gauche
     //hpSprite = this.add.image(x,y,'hp_max');//new
     //hpSprite.setTexture('newImage');
     
@@ -92,29 +110,33 @@ function create ()
     //  The platforms group contains the ground and the 2 ledges we can jump on
     platforms = this.physics.add.staticGroup();
     ice_platforms = this.physics.add.staticGroup();
-    snow_platforms = this.physics.add.staticGroup();
-
-    //  Here we create the ground.
-    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
-    platforms.create(960, 1050, 'ground').setScale(5).refreshBody();
-
-    //  Les plateformes
-    snow_platforms.create(900, 900, 'snow');
-    platforms.create(50, 750, 'ground');
-    ice_platforms.create(1450, 900, 'ice');
-
-    // Le personnage et ses caractéristiques
-    player = this.physics.add.sprite(100, 450, 'character');
+    snow_platforms = this.physics.add.staticGroup({
+    });
+    
+// Le personnage et ses caractéristiques
+    player = this.physics.add.sprite(250, 1700, 'character');
     player.setSize(128, 163);
-    player.setOffset(120, -90);
+    player.setOffset(130, -90);
     player.setOrigin(0.5, 1);
+    player.setCollideWorldBounds(true);
     
     player.on('animationcomplete', function(){ //  Autorise le personnage à bouger uniquement quand l'animation d'attaque se fini
         attack = false;
     });
+    //  Here we create the ground.
+    //  Scale it to fit the width of the game (the original sprite is 400x32 in size
+
+    //  Les plateformes
     
-    //  Player physics properties.
-    player.setCollideWorldBounds(true);
+    ice_platforms.create(1980, 2259, 'bottom_ice');
+    platforms.create(645, 2245, 'bottom_left_rock').setOffset(0,30);
+    snow_platforms.create(3349, 2244, 'bottom_right_snow2').setOffset(0,30);
+    snow_platforms.create(3928, 2030, 'bottom_right_snow').setSize(144, 700).setOffset(30,-50);
+    snow_platforms.create(3366, 1138, 'right_snow').setSize(1266, 1200).setOffset(50,60);
+    platforms.create(950, 882, 'middle_rock_1').setSize(140,515).setOffset(60, 0);
+    platforms.create(1540, 877, 'middle_rock_2').setSize(540,520).setOffset(20, 10);
+    platforms.create(1398, 1636, 'middle_rock_3').setSize(1100, 375).setOffset(55, 25);
+    platforms.create(77, 1919, 'left_rock').setOffset(0,0);
     
     ennemi = this.physics.add.sprite(900, 750, 'ennemi');
     ennemi.setCollideWorldBounds(true);
@@ -122,7 +144,6 @@ function create ()
     hitboxes = this.physics.add.sprite(0,0,'sword');
     hitboxes.body.setAllowGravity(false);
     
-
     //  Animation du personage
     
     this.anims.create({
@@ -196,6 +217,17 @@ function create ()
         
     });
 
+    this.anims.create({
+        key: 'wall',
+        frames: this.anims.generateFrameNames('character', {
+            prefix: 'wall',
+            start: 1,
+            end: 1,
+            zeroPad: 1
+        }),
+        repeat: 0
+        
+    });
     
     this.anims.create({
         key: 'ennemi_idle',
@@ -208,15 +240,20 @@ function create ()
         frameRate: 6,
         repeat: -1
     });
+    
     ennemi.anims.play('ennemi_idle', true);
     //  Input Events
     cursors = this.input.keyboard.createCursorKeys();
-
+    
+    var ennemies = this.physics.add.group();
+    
+    var ennemie = ennemies.create(250, 250, 'ennemi')
+    ennemie.anims.play('ennemi_idle', true);
     //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
     stars = this.physics.add.group({
         key: 'star',
         repeat: 11,
-        setXY: { x: 12, y: 0, stepX: 70 }
+        setXY: {x: 12, y: 0, stepX: 70}
     });
 
     stars.children.iterate(function (child) {
@@ -230,8 +267,8 @@ function create ()
 
     //  The score
     testText = this.add.text(400, 80, 'Test: 0', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
+    
     inputText = this.add.text(400, 48, 'Input: 5', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
-    scoreText = this.add.text(400, 16, 'Score: 0', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
 
     //  Collide the player and the stars with the platforms
     this.physics.add.collider(player, platforms, touching_ground, null, this);
@@ -246,8 +283,9 @@ function create ()
     this.physics.add.overlap(player, stars, collectStar, null, this);
     this.physics.add.overlap(hitboxes, ennemi, attackEnnemi, null, this);
     this.physics.add.overlap(player, ennemi, hitEnnemi, null, this);
+    this.physics.add.overlap(hitboxes, ennemies, attackEnnemi, null, this);
     
-    this.cameras.main.setBounds(0,0,3658, 2058);
+    this.cameras.main.setBounds(0,0,4000, 2300);
     this.cameras.main.setSize(1920,1080);
     this.cameras.main.startFollow(player, true, 0.08, 0.08);
 }
@@ -313,7 +351,7 @@ function update ()
         player.setVelocityX(0);     //Retire la vitesse horizontale avant de sauter
         
         if (jumping && jumps > 0){  //Si il a relaché la touche et si il lui reste des sauts
-            player.setVelocityY(-330);
+            player.setVelocityY(-650);
             jumps--;    //Retire un de la variable qui correspond au nombre de saut encore disponible
             jumping = false;    //jumping deviens faux tant que la touche est enfoncé, le joueur ne peut plus sauté tant qu'il ne la relache pas
         }
@@ -332,7 +370,7 @@ function update ()
         }
         
         if (jumping && jumps > 0){      //Si le joueur peut sauter
-            player.setVelocityY(-330);
+            player.setVelocityY(-650);
             jumps--;
             jumping = false;
         }
@@ -351,7 +389,7 @@ function update ()
         }
             
         if (jumping && jumps > 0){
-            player.setVelocityY(-330);
+            player.setVelocityY(-650);
             jumps--;
             jumping = false;
         }
@@ -467,17 +505,6 @@ function update ()
         player.anims.play('idle', true);
     }
     
-    if(playerHp == 0)
-    {
-        this.physics.pause();
-
-        player.visible = false;
-        
-        gameOver = true;
-
-        perdu = this.time.addEvent({ delay: 10, callback: function(){alert('Perdu');}, callbackScope: this});
-    }
-    
 
     if (attack){
         hitboxes.y = player.y-player.height/2.5;
@@ -488,6 +515,17 @@ function update ()
         else{
             hitboxes.x = player.x-hitboxes.width/2;
         }
+    }
+    
+    if(playerHp == 0)
+    {
+        this.physics.pause();
+
+        player.visible = false;
+        
+        gameOver = true;
+
+        perdu = this.time.addEvent({ delay: 10, callback: function(){alert('Perdu');}, callbackScope: this});
     }
     
     if(playerHp == 3){
@@ -502,17 +540,20 @@ function update ()
         hp.setTexture('hp1');
     }
     
-    testText.setText('Test: ' + playerHp);
+    testText.setText('Test: ' + sol);
     inputText.setText('Input: ' + playerInput);
 }
 
+    
+    
+    
+    
+    
 function collectStar (player, star)
 {
     star.disableBody(true, true);
 
     //  Add and update the score
-    score += 10;
-    scoreText.setText('Score: ' + score);
 
     if (stars.countActive(true) === 0)
     {
@@ -549,7 +590,6 @@ function hitEnnemi(player, ennemi)
     }
     
 }
-
 
 
 function attackEnnemi(hitboxes, ennemi)
