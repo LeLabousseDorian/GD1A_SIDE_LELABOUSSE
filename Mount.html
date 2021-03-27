@@ -114,7 +114,7 @@ function create ()
     });
     
 // Le personnage et ses caractéristiques
-    player = this.physics.add.sprite(250, 1700, 'character');
+    player = this.physics.add.sprite(2600, 1700, 'character');
     player.setSize(128, 163);
     player.setOffset(130, -90);
     player.setOrigin(0.5, 1);
@@ -273,9 +273,9 @@ function create ()
     inputText = this.add.text(400, 48, 'Input: 5', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
 
     //  Collide the player and the stars with the platforms
-    this.physics.add.collider(player, platforms, touching_ground, null, this);
     this.physics.add.collider(player, ice_platforms, touching_ice, null, this);
     this.physics.add.collider(player, snow_platforms, touching_snow, null, this);
+    this.physics.add.collider(player, platforms, touching_ground, null, this);
     this.physics.add.collider(ennemi, platforms);
     this.physics.add.collider(ennemi, snow_platforms);
     this.physics.add.collider(ennemi, ice_platforms);
@@ -375,7 +375,13 @@ function update ()
     {
         player.setVelocityX(0);     //Retire la vitesse horizontale avant de sauter
         
-        if (jumping && jumps > 0){  //Si il a relaché la touche et si il lui reste des sauts
+        if (jumping && jumps > 0 && sol >= 1){  //Si il a relaché la touche et si il lui reste des sauts
+            player.setVelocityY(-380);
+            jumps--;    //Retire un de la variable qui correspond au nombre de saut encore disponible
+            jumping = false;    //jumping deviens faux tant que la touche est enfoncé, le joueur ne peut plus sauté tant qu'il ne la relache pas
+        }
+        
+        else if (jumping && jumps > 0){  //Si il a relaché la touche et si il lui reste des sauts
             player.setVelocityY(-650);
             jumps--;    //Retire un de la variable qui correspond au nombre de saut encore disponible
             jumping = false;    //jumping deviens faux tant que la touche est enfoncé, le joueur ne peut plus sauté tant qu'il ne la relache pas
@@ -384,6 +390,7 @@ function update ()
     
     else if (playerInput == 9)  //Si le joueur appuie sur la diagonale Haut Droite
     {
+        player.flipX = true;
         if (sol == 2){                 //Si le joueur est sur de la neige
             player.setVelocityX(250);   //Saute moins haut que sur le sol normal
         }
@@ -392,7 +399,13 @@ function update ()
             player.setVelocityX(500);
         }
         
-        if (jumping && jumps > 0){      //Si le joueur peut sauter
+        if (jumping && jumps > 0 && sol >= 1){      //Si le joueur peut sauter
+            player.setVelocityY(-380);
+            jumps--;
+            jumping = false;
+        }
+        
+        else if (jumping && jumps > 0){      //Si le joueur peut sauter
             player.setVelocityY(-650);
             jumps--;
             jumping = false;
@@ -401,6 +414,7 @@ function update ()
     
     else if (playerInput == 7)
     {
+        player.flipX = false;
         if (sol == 2){
             player.setVelocityX(-250);
         }
@@ -409,7 +423,13 @@ function update ()
             player.setVelocityX(-500);
         }
             
-        if (jumping && jumps > 0){
+        if (jumping && jumps > 0 && sol >= 1){
+            player.setVelocityY(-380);
+            jumps--;
+            jumping = false;
+        }
+        
+        else if (jumping && jumps > 0){
             player.setVelocityY(-650);
             jumps--;
             jumping = false;
@@ -419,6 +439,7 @@ function update ()
     
     //Movement left/right
     else if (playerInput == 4){
+        player.flipX = false;
         if (sol == 2){
             player.setVelocityX(-250);
         }
@@ -434,7 +455,7 @@ function update ()
     }
 
     else if (playerInput == 6){
-        
+        player.flipX = true;
         if (sol == 2){
             player.setVelocityX(250);
         }
@@ -486,11 +507,11 @@ function update ()
         jumps = 1;
     }
     
-    if (player.body.velocity.x > 0){
+    if (player.body.velocity.x > 300){
         player.flipX = true;
     }
     
-    else if (player.body.velocity.x < 0){
+    else if (player.body.velocity.x < -300){
         player.flipX = false;
     }
     //Character's Animation
