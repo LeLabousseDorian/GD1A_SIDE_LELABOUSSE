@@ -35,6 +35,7 @@ var config = {
 
 var player;
 var playerHp = 3;
+var jumpTick = 0;
 var ennemi;
 var stars;
 var platforms;
@@ -80,7 +81,6 @@ function preload ()
     this.load.image('mountainF', 'assets/mountain_far.png');
     this.load.image('mountainC', 'assets/mountain_close.png');
     this.load.image('ground', 'assets/platform.png');
-    this.load.image('ice', 'assets/ice_platform.png');
     this.load.image('snow', 'assets/snow_platform.png');
     this.load.image('star', 'assets/star.png');
     this.load.image('hp1', 'assets/hp_1.png');
@@ -249,6 +249,8 @@ function create ()
     
     var ennemie = ennemies.create(250, 250, 'ennemi')
     ennemie.anims.play('ennemi_idle', true);
+    
+    
     //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
     stars = this.physics.add.group({
         key: 'star',
@@ -314,6 +316,12 @@ function update ()
         attack = true;
     }
     
+    else if(jumpTick > 0){
+        playerInput = 5
+        jumpTick--
+        
+    }
+    
     else if (cursors.up.isDown && cursors.right.isDown || pad.A && pad.right  || pad.A && xAxis > 0){
         playerInput = 9;
     }
@@ -341,11 +349,28 @@ function update ()
     
     //Character's movement
     
+    //Attack
     if(attack){                     //Si l'animation d'attack est en cours
-        player.setVelocityX(0);     //Pendant l'attaque le joueur ne se déplace plus  horizontalement
+        player.setVelocityX(0);     //Pendant l'attaque le joueur ne se déplace plus  horizontalement 
+    }
+    
+    
+    //Wall jump
+    else if (player.body.blocked.left && playerInput >= 7){
+        jumpTick = 30;
+        player.setVelocityY(-650)
+        player.setVelocityX(400)
         
     }
     
+    else if (player.body.blocked.right && playerInput >= 7){
+        jumpTick = 30;
+        player.setVelocityY(-650)
+        player.setVelocityX(-400)
+    }
+    
+    
+    //Jump
     else if (playerInput == 8)      //Si le joueur appuie sur haut
     {
         player.setVelocityX(0);     //Retire la vitesse horizontale avant de sauter
@@ -361,12 +386,10 @@ function update ()
     {
         if (sol == 2){                 //Si le joueur est sur de la neige
             player.setVelocityX(250);   //Saute moins haut que sur le sol normal
-            player.flipX = true;        //
         }
         
         else {                          //Sinon le joueur saute normalement
             player.setVelocityX(500);
-            player.flipX = true;
         }
         
         if (jumping && jumps > 0){      //Si le joueur peut sauter
@@ -380,12 +403,10 @@ function update ()
     {
         if (sol == 2){
             player.setVelocityX(-250);
-            player.flipX = false;
         }
         
         else {
             player.setVelocityX(-500);
-            player.flipX = false;
         }
             
         if (jumping && jumps > 0){
@@ -395,20 +416,19 @@ function update ()
         }
     }
     
+    
+    //Movement left/right
     else if (playerInput == 4){
         if (sol == 2){
             player.setVelocityX(-250);
-            player.flipX = false;
         }
         
         else if (sol == 1 && player.body.touching.down){
             player.setAccelerationX(-300);
-            player.flipX = false;
         }
         
         else {
             player.setVelocityX(-500);
-            player.flipX = false;
         }
         
     }
@@ -417,20 +437,19 @@ function update ()
         
         if (sol == 2){
             player.setVelocityX(250);
-            player.flipX = true;
         }
         
         else if (sol == 1 && player.body.touching.down){
             player.setAccelerationX(300);
-            player.flipX = true;
         }
 
         else {
             player.setVelocityX(500);
-            player.flipX = true;
         }
     }
     
+    
+    //No input from player
     else {
         if (sol == 1 && player.body.touching.down){
             if(player.body.velocity.x < 0){
@@ -441,11 +460,16 @@ function update ()
                 player.setAccelerationX(-300);
             }
             
+            
             else {
                 player.setVelocityX(0);
                 player.setAccelerationX(0);
             }
         }
+        
+        else if (jumpTick > 0){
+                
+            }
         
         else {
             player.setVelocityX(0);
@@ -462,7 +486,13 @@ function update ()
         jumps = 1;
     }
     
-
+    if (player.body.velocity.x > 0){
+        player.flipX = true;
+    }
+    
+    else if (player.body.velocity.x < 0){
+        player.flipX = false;
+    }
     //Character's Animation
     
     if (attack){
@@ -546,9 +576,6 @@ function update ()
 
     
     
-    
-    
-    
 function collectStar (player, star)
 {
     star.disableBody(true, true);
@@ -590,7 +617,6 @@ function hitEnnemi(player, ennemi)
     }
     
 }
-
 
 function attackEnnemi(hitboxes, ennemi)
 {
