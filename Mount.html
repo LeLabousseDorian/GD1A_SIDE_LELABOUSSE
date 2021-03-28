@@ -33,34 +33,39 @@ var config = {
     }
 };
 
-var player;
-var playerHp = 3;
-var jumpTick = 0;
-var bottes;
-var boot = false;
-var stars;
+//Personnage
+var player; 
+var playerHp = 3;   //Hp du joueur
+var jumpTick = 0;   //Timer pour le wall Jump
+var boot = false    //botte récuperé ou non
+var attack = false; //Joueur en train d'attaquer ou non
+var invulnerable = false;   //Joueur invulnérable ou non
+var playerInput = 5;    //Input du joueur
+var sol = 0; //Sol sur lequel le joueur se trouve
+var jumps = 1;  //Nombre de saut possible une fois en l'air
+var jumping = true; //Sert a savoir si le joueur a le droit de sauter
+    
+//Group des différentes plateforms
 var platforms;
 var ice_platforms;
 var snow_platforms;
-var cursors;
-var attack = false;
-var gameOver = false;
     
-var invulnerable = false;
-var sol = 0; // sol sur lequel le joueur se trouve
-var jumps = 1;
-var jumping = true; //Sert a savoir si le joueur a le droit de sauter
-var playerInput = 5;    //input du joueur
+//Control
+var cursors;    //Keyboard key
+var keyZ;       //Nom donné à la touche Z du clavier
 
-var inputText;
-var testText;
 
-var xAxis = 0;  //stick xAxys
-var yAxis = 0;  //stick xAxys
+var xAxis = 0;  //Stick xAxys
+var yAxis = 0;  //Stick xAxys
+
+var bottes; //Power-up récupérable
+var gameOver = false;
+
+
 
 var game = new Phaser.Game(config);
 
-//space = this.input.keyboard.addKey('space');
+
 //if (Phaser.Input.Keyboard.JustDown(space)){taFunction}
     
 function preload ()
@@ -83,7 +88,6 @@ function preload ()
     this.load.image('mountainC', 'assets/mountain_close.png');
     this.load.image('snow', 'assets/snow_platform.png');
     this.load.image('icicle', 'assets/icicle.png');
-    this.load.image('star', 'assets/star.png');
     this.load.image('hp0', 'assets/hp_0.png');
     this.load.image('hp1', 'assets/hp_1.png');
     this.load.image('hp2', 'assets/hp_2.png');
@@ -96,30 +100,26 @@ function preload ()
 
 function create ()
 {
-    //  A simple background for our game
-    //map = this.add.tilemap('map'); //new
-    //map.addTilesetImage('Calque de Tuiles 1', 'map');
-    //layer = map.createlayer()
-    this.add.image(1445, 810,'sky').setScrollFactor(0.1);//new
-    this.add.image(1045, 810,'mountainF').setScrollFactor(0.1);
+    
+    
+    keyZ = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+
+    this.add.image(1445, 810,'sky').setScrollFactor(0.1);   
+    this.add.image(1045, 810,'mountainF').setScrollFactor(0.1); //Deux plan de montagnes, parallax avec le setSCrollFactor.
     this.add.image(1245, 810,'mountainC').setScrollFactor(0.15);
-    this.add.image(1500, 2300-813, 'middle_fondrock');
-    hp = this.add.image(200, 100, 'hp3').setScrollFactor(0); //hp du joueur en haut a gauche
-    //hpSprite = this.add.image(x,y,'hp_max');//new
-    //hpSprite.setTexture('newImage');
+    this.add.image(1500, 2300-813, 'middle_fondrock');  //Fond de la montagne du milieu
     
-    
-    //  The platforms group contains the ground and the 2 ledges we can jump on
+    //Création des groupes de plateforms
     platforms = this.physics.add.staticGroup();
     ice_platforms = this.physics.add.staticGroup();
     snow_platforms = this.physics.add.staticGroup({
     });
     
-    bottes = this.physics.add.sprite(3700, 2100,'bottes');
+    bottes = this.physics.add.sprite(3700, 2050,'bottes');  //Création du power-up récupérable
     bottes.body.setAllowGravity(false);
     
-// Le personnage et ses caractéristiques
-    player = this.physics.add.sprite(1000, 2000, 'character');
+    //Le personnage et ses caractéristiques
+    player = this.physics.add.sprite(1400, 500, 'character');
     player.setSize(128, 163);
     player.setOffset(130, -90);
     player.setOrigin(0.5, 1);
@@ -128,29 +128,30 @@ function create ()
     player.on('animationcomplete', function(){ //  Autorise le personnage à bouger uniquement quand l'animation d'attaque se fini
         attack = false;
     });
-    //  Here we create the ground.
-    //  Scale it to fit the width of the game (the original sprite is 400x32 in size
 
-    //  Les plateformes
     
+    //Création des stalatites de glace
     var icicles = this.physics.add.group();
     icicle = icicles.create(3200, 1800, 'icicle').body.setAllowGravity(false);
     icicle1 = icicles.create(3000, 1750, 'icicle').body.setAllowGravity(false);
     
+    
+    //Création des plateforms avec leur position et leur taille
     ice_platforms.create(1980, 2259, 'bottom_ice');
-    platforms.create(645, 2245, 'bottom_left_rock').setOffset(0,30);
+    platforms.create(77, 1915, 'left_rock').setOffset(-20,0);
+    platforms.create(728, 2256, 'bottom_left_rock').setOffset(0,20);
     snow_platforms.create(3349, 2244, 'bottom_right_snow2').setOffset(0,30);
     snow_platforms.create(3928, 2030, 'bottom_right_snow').setSize(144, 700).setOffset(30,-50);
-    snow_platforms.create(3366, 1138, 'right_snow').setSize(1266, 1200).setOffset(50,60);
-    platforms.create(950, 882, 'middle_rock_1').setSize(120,515).setOffset(30, 0);
-    platforms.create(1540, 877, 'middle_rock_2').setSize(540,520).setOffset(20, 10);
-    platforms.create(1398, 1636, 'middle_rock_3').setSize(1100, 375).setOffset(55, 25);
-    platforms.create(77, 1919, 'left_rock').setOffset(0,0);
+    snow_platforms.create(3366, 1138, 'right_snow').setSize(1266, 1200).setOffset(75,60);
+    platforms.create(980, 884, 'middle_rock_1').setSize(160,515).setOffset(30, 15);
+    platforms.create(1585, 867, 'middle_rock_2').setSize(540,520).setOffset(30, 30);
+    platforms.create(1453, 1625, 'middle_rock_3').setSize(1135, 375).setOffset(20, 25);
     
+    //Création de la hitbox de l'attaque
     hitboxes = this.physics.add.sprite(0,0,'sword');
     hitboxes.body.setAllowGravity(false);
     
-    //  Animation du personage
+    //Animation du personage
     
     this.anims.create({
         key: 'idle',
@@ -231,10 +232,12 @@ function create ()
             end: 1,
             zeroPad: 1
         }),
-        repeat: 0
+        repeat: -1
         
     });
     
+    
+    //Animation des ennemis
     this.anims.create({
         key: 'ennemi_idle',
         frames: this.anims.generateFrameNames('ennemi', {
@@ -259,29 +262,25 @@ function create ()
         
     });
 
-    //  Input Events
+    
+    //Création des contrôles clavier
     cursors = this.input.keyboard.createCursorKeys();
     
+    
+    //Création du groupe d'enenmi
     var ennemies = this.physics.add.group();
     
+    
+    //Création des ennemis et de leur position
     var ennemie = ennemies.create(500, 2100, 'ennemi')
     ennemie.anims.play('ennemi_idle', true);
     
     
-    //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
-    stars = this.physics.add.group({
-        key: 'star',
-        repeat: 11,
-        setXY: {x: 12, y: 0, stepX: 70}
-    });
-
-    stars.children.iterate(function (child) {
-
-        //  Give each star a slightly different bounce
-        child.setBounceY(Phaser.Math.FloatBetween(0.2, 0.4));
-
-    });
+    //Ajout de la touche X du clavier
+    var keyX = this.input.keyboard.addKey('x');
     
+    
+    //Pattern des ennemis
     var ennemy = this.tweens.add({
         targets: ennemie,
         x: 250,
@@ -290,17 +289,11 @@ function create ()
         yoyo: true,
         flipX: true,
         repeat: -1,
-        onStart: function() {ennemie.anims.play('ennemi_run')},
-        onComplete: function () {ennemie.anims.play('ennemi_idle')},})
-        
-    //bombs = this.physics.add.group(); group ennemi plus tard
+        onStart: function() {ennemie.anims.play('ennemi_run')},})
 
-    //  The score
-    testText = this.add.text(400, 80, 'Test: 0', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
     
-    inputText = this.add.text(400, 48, 'Input: 5', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
-
-    //  Collide the player and the stars with the platforms
+    
+    //Collider et Overlap
     this.physics.add.collider(player, ice_platforms, touching_ice, null, this);
     this.physics.add.collider(player, snow_platforms, touching_snow, null, this);
     this.physics.add.collider(player, platforms, touching_ground, null, this);
@@ -310,16 +303,16 @@ function create ()
     this.physics.add.collider(ennemies, platforms);
     this.physics.add.collider(ennemies, snow_platforms);
     this.physics.add.collider(ennemies, ice_platforms);
-    this.physics.add.collider(stars, platforms);
-    
-    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
-    this.physics.add.overlap(player, stars, collectStar, null, this);
+
     this.physics.add.overlap(player, ennemie, hitEnnemi, null, this);
     this.physics.add.overlap(hitboxes, ennemies, attackEnnemi, null, this);
     
     this.cameras.main.setBounds(0,0,4000, 2300);
     this.cameras.main.setSize(1920,1080);
     this.cameras.main.startFollow(player, true, 0.08, 0.08);
+    
+    //Création des hp, ç la fin pour qu'elle soit au dessus de tout in-game
+    hp = this.add.image(200, 100, 'hp3').setScrollFactor(0); //hp du joueur en haut a gauche, ScrollFactor à 0 pour que ça reste dans l'écran du joueur
 }
 
 function update ()
@@ -328,54 +321,63 @@ function update ()
     {
         return;
     }
-    //
-    
+
+    //Creation de la reconnaissance des pad
     let pad = Phaser.Input.Gamepad.Gamepad;
     
-    if(this.input.gamepad.total){
-        pad = this.input.gamepad.getPad(0)
-        xAxis = pad ? pad.axes[0].getValue() : 0;
-        yAxis = pad ? pad.axes[1].getValue() : 0;
+    
+    if(this.input.gamepad.total){   //Si une manette est connecté
+        pad = this.input.gamepad.getPad(0)  //pad récupère les inputs du joueur
+        xAxis = pad ? pad.axes[0].getValue() : 0;   //Si le stick est utilisé xAxys récupère la valeur sur l'axe X, sinon il est égale a 0
+        yAxis = pad ? pad.axes[1].getValue() : 0;   //Pareil pour l'axe Y
     }
     
     
     //Player's input
+    //Les controles sont pensé comme un pavé numérique, le 5 représente l'absence d'input et les 8 autres chiffres sont les 8 directions, exception pour 2 qui deviens l'attaque
     
-    if (cursors.down.isDown || pad.X){
+    if (keyZ.isDown || pad.X){  //Si Z ou X sur une manette est appuyé
         playerInput = 2;
         attack = true;
     }
     
-    else if(jumpTick > 0){
+    else if(jumpTick > 0){  //Utilisation de jumpTick comme timer, tant que c'est > 0 le joueur est forcé de ne rien faire
         playerInput = 5
         jumpTick--
         
     }
-    
-    else if (cursors.up.isDown && cursors.right.isDown || pad.A && pad.right  || pad.A && xAxis > 0){
+    //Haut droite
+    else if (cursors.up.isDown && cursors.right.isDown || pad.A && pad.right  || pad.A && xAxis > 0){   
         playerInput = 9;
     }
-
+    
+    //Haut gauche
     else if(cursors.up.isDown && cursors.left.isDown || pad.A && pad.left || pad.A && xAxis < 0){
         playerInput = 7;
     }
-
+    
+    //Haut
     else if(cursors.up.isDown || pad.A){
         playerInput = 8;
     }
 
+    //Gauche
     else if (cursors.left.isDown || pad.left || xAxis < 0){
         playerInput = 4;
     }
-
+    
+    //Droite
     else if (cursors.right.isDown || pad.right || xAxis > 0){
         playerInput = 6;
     }
 
+    //Neutre/Centre
     else{
         playerInput = 5;
     }
 
+    
+    
 if (player.body.velocity.x > 300){
         player.flipX = true;
     }
@@ -383,23 +385,26 @@ if (player.body.velocity.x > 300){
     else if (player.body.velocity.x < -300){
         player.flipX = false;
     }
+    
+    
+    
     //Character's movement
 
     //Attack
     if(attack){                     //Si l'animation d'attack est en cours
-        player.setVelocityX(0);     //Pendant l'attaque le joueur ne se déplace plus  horizontalement
+       player.setVelocityX(0);     //Pendant l'attaque le joueur ne se déplace plus horizontalement
     }
 
 
     //Wall jump
-    else if (player.body.blocked.left && playerInput >= 7){
-        jumpTick = 30;
-        player.setVelocityY(-550)
+    else if (player.body.blocked.left && playerInput >= 7){ //Si le joueur est bloqué sur sa gauche et qu'il essaye de sauter
+        jumpTick = 30;  //JumpTick sert de timer entre le wall jump et le moment ou le joueur peut controler la direction de son personnage
+        player.setVelocityY(-550)   //Saute en diagonale
         player.setVelocityX(400)
 
     }
 
-    else if (player.body.blocked.right && playerInput >= 7){
+    else if (player.body.blocked.right && playerInput >= 7){    //Pareil qu'au dessus mais si le joueur a un mur sur sa droite
         jumpTick = 30;
         player.setVelocityY(-550)
         player.setVelocityX(-400)
@@ -426,8 +431,8 @@ if (player.body.velocity.x > 300){
     
     else if (playerInput == 9)  //Si le joueur appuie sur la diagonale Haut Droite
     {
-        player.flipX = true;
-        if (sol == 2 && !boot){                 //Si le joueur est sur de la neige
+        player.flipX = true;    //Flip deviens vrai pour que le joueur regarde à droite
+        if (sol == 2 && !boot){                 //Si le joueur est sur de la neige et n'a pas les bottes
             player.setVelocityX(250);   //Saute moins haut que sur le sol normal
         }
         
@@ -435,18 +440,19 @@ if (player.body.velocity.x > 300){
             player.setVelocityX(500);
         }
         
-        if (jumping && jumps > 0 && sol >= 1 && !boot){      //Si le joueur peut sauter
-            player.setVelocityY(-380);
+        if (jumping && jumps > 0 && sol >= 1 && !boot){     //Si le joueur peut sauter, est sur un sol glace ou neige et n'a pas les bottes
+            player.setVelocityY(-380);                      //Saut moins puissant
             jumps--;
             jumping = false;
         }
         
-        else if (jumping && jumps > 0){      //Si le joueur peut sauter
-            player.setVelocityY(-550);
+        else if (jumping && jumps > 0){     //Si le joueur peut sauter
+            player.setVelocityY(-550);      //Saut normal
             jumps--;
             jumping = false;
         }
     }
+    
     
     else if (playerInput == 7)
     {
@@ -534,7 +540,7 @@ if (player.body.velocity.x > 300){
         }
     }
     
-    if(playerInput !=8 && playerInput !=9 && playerInput !=7 ){
+    if(playerInput < 7){
         jumping = true;
     }
     
@@ -545,7 +551,7 @@ if (player.body.velocity.x > 300){
     
     
     //Character's Animation
-    
+    //L'animation du personnage est basé sur sa velocité
     if (attack){
         player.anims.play('attack', true);
     }
@@ -591,7 +597,7 @@ if (player.body.velocity.x > 300){
     }
     
 
-    if (attack){
+    if (attack){    //reposition de la hitboxes quand le joueur attack
         hitboxes.y = player.y-player.height/2.5;
         if (player.flipX){
             hitboxes.x = player.x+hitboxes.width/2;
@@ -602,19 +608,21 @@ if (player.body.velocity.x > 300){
         }
     }
     
+    
+    //Barre d'hp
     if(playerHp == 1)
     {
         hp.setTexture('hp1');
-        
     }
     
-    if(playerHp == 3){
-       hp.setTexture('hp3');
-       }
-    
+
     else if (playerHp == 2){
         hp.setTexture('hp2');
     }
+    
+    else if(playerHp == 3){
+       hp.setTexture('hp3');
+       }
     
     else{
         hp.setTexture('hp0');
@@ -628,6 +636,7 @@ if (player.body.velocity.x > 300){
         perdu = this.time.addEvent({ delay: 10, callback: function(){alert('Perdu');}, callbackScope: this});
     }
     
+    //Si le joueuer est a -150 pixels de la position d'un icicle, il tombe
     if (icicle.x-150 < player.x ){
         icicle.setAllowGravity(true);
     }
@@ -636,8 +645,6 @@ if (player.body.velocity.x > 300){
         icicle1.setAllowGravity(true);
     }
     
-    testText.setText('Test: ' + boot);
-    inputText.setText('Input: ' + playerInput);
 }
 
 
@@ -645,32 +652,6 @@ function instaKill(player, icicles){
     playerHp = 0;
 }
 
-
-function collectStar (player, star)
-{
-    star.disableBody(true, true);
-
-    //  Add and update the score
-
-    if (stars.countActive(true) === 0)
-    {
-        //  A new batch of stars to collect
-        stars.children.iterate(function (child) {
-
-            child.enableBody(true, child.x, 0, true, true);
-
-        });
-/*
-        var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
-
-        var bomb = bombs.create(x, 16, 'bomb');
-        bomb.setBounce(1);
-        bomb.setCollideWorldBounds(true);
-        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-        bomb.allowGravity = false;
-*/
-    }
-}
 
 function hitEnnemi(player, ennemi)
 {
@@ -695,7 +676,7 @@ function recolteBottes(player, bottes){
     
 function attackEnnemi(hitboxes, ennemi)
 {
-    if(attack){
+    if(attack){ 
         ennemi.destroy();
     }
 }
